@@ -1,6 +1,6 @@
 mountpoints:
   /:
-    url: "http://localhost:3000/bin/franklin.delivery/aem-comm/auspost-eds-ue/main"
+    url: "https://author-p105957-e1283031.adobeaemcloud.com/bin/franklin.delivery/aem-comm/auspost-eds-ue/main"
     type: "markup"
     suffix: ".html"
 folders:
