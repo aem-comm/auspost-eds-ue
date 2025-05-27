@@ -2,8 +2,7 @@
   {
     "id": "main",
     "components": [
-      "section",
-			"enrichment-section"
+      "section"
     ]
   },
   {
@@ -26,27 +25,7 @@
       "product-teaser",
       "product-recommendations",
       "product-details",
-      "product-list-page",
-      "commerce-mini-cart",
-      "commerce-order-header",
-      "commerce-order-status",
-      "commerce-shipping-status",
-      "commerce-customer-details",
-      "commerce-order-cost-summary",
-      "commerce-order-product-list",
-      "commerce-order-returns",
-	    "commerce-checkout",
-	    "commerce-search-order",
-	    "commerce-login",
-	    "commerce-forgot-password",
-	    "commerce-create-account",
-	    "commerce-account-sidebar",
-      "commerce-account-header",
-      "commerce-orders-list",
-      "commerce-addresses",
-      "commerce-customer-information",
-      "commerce-returns-list",
-	    "commerce-create-password"
+			"checkout-section"
     ]
   },
   {
