@@ -1,22 +1,47 @@
-import { readBlockConfig, getConfig } from '../../scripts/aem.js';
+import { readBlockConfig } from '../../scripts/aem.js';
+import { performCatalogServiceQuery, renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
+import { rootLink } from '../../scripts/scripts.js';
 
 const productTeaserQuery = `query productTeaser($sku: String!) {
-  listMagentoProduct(filter: { sku: { eq: $sku } }) {
-    items {
-      sku
-      name
+  products(skus: [$sku]) {
+    sku
+    urlKey
+    name
+    externalId
+    addToCartAllowed
+    __typename
+    images(roles: ["small_image"]) {
+      label
+      url
+    }
+    ... on SimpleProductView {
       price {
-        regularPrice {
-          amount {
-            value
-            currency
-          }
+        ...priceFields
+      }
+    }
+    ... on ComplexProductView {
+      priceRange {
+        minimum {
+          ...priceFields
+        }
+        maximum {
+          ...priceFields
         }
       }
-      image {
-        url
-        label
-      }
+    }
+  }
+}
+fragment priceFields on ProductViewPrice {
+  regular {
+    amount {
+      currency
+      value
+    }
+  }
+  final {
+    amount {
+      currency
+      value
     }
   }
 }`;
@@ -39,23 +64,41 @@ function renderPlaceholder(config, block) {
 }
 
 function renderImage(image, size = 250) {
-  const { url, label } = image;
-  const imgUrl = url.startsWith('http') ? url : `https://${url}`;
-  return document.createRange().createContextualFragment(`
-    <picture>
-      <img height="${size}" width="${size}" src="${imgUrl}" loading="eager" alt="${label}" />
+  const { url: imageUrl, label } = image;
+  const createUrlForWidth = (url, w, useWebply = true) => {
+    const newUrl = new URL(url, window.location);
+    if (useWebply) {
+      newUrl.searchParams.set('format', 'webply');
+      newUrl.searchParams.set('optimize', 'medium');
+    } else {
+      newUrl.searchParams.delete('format');
+    }
+    newUrl.searchParams.set('width', w);
+    newUrl.searchParams.delete('quality');
+    newUrl.searchParams.delete('dpr');
+    newUrl.searchParams.delete('bg-color');
+    return newUrl.toString();
+  };
+
+  const createUrlForDpi = (url, w, useWebply = true) => `${createUrlForWidth(url, w, useWebply)} 1x, ${createUrlForWidth(url, w * 2, useWebply)} 2x, ${createUrlForWidth(url, w * 3, useWebply)} 3x`;
+
+  const webpUrl = createUrlForDpi(imageUrl, size, true);
+  const jpgUrl = createUrlForDpi(imageUrl, size, false);
+
+  return document.createRange().createContextualFragment(`<picture>
+      <source srcset="${webpUrl}" />
+      <source srcset="${jpgUrl}" />
+      <img height="${size}" width="${size}" src="${createUrlForWidth(imageUrl, size, false)}" loading="eager" alt="${label}" />
     </picture>
   `);
 }
 
 function renderProduct(product, config, block) {
   const {
-    name, sku, price, image,
+    name, urlKey, sku, price, priceRange, addToCartAllowed, __typename,
   } = product;
 
-  const currency = price?.regularPrice?.amount?.currency || 'USD';
-  const value = price?.regularPrice?.amount?.value || 0;
-
+  const currency = price?.final?.amount?.currency || priceRange?.minimum?.final?.amount?.currency;
   const priceFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
@@ -67,58 +110,49 @@ function renderProduct(product, config, block) {
     </div>
     <div class="details">
       <h1>${name}</h1>
-      <div class="price">${priceFormatter.format(value)}</div>
+      <div class="price">${renderPrice(product, priceFormatter.format)}</div>
       <div class="actions">
-        ${config['details-button'] ? `<a href="/products/${sku}" class="button primary">Details</a>` : ''}
-        ${config['cart-button'] ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
+        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''}
+        ${config['cart-button'] && addToCartAllowed && __typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
       </div>
     </div>
   `);
 
-  fragment.querySelector('.image').appendChild(renderImage(image, 250));
+  fragment.querySelector('.image').appendChild(renderImage(product.images[0], 250));
+
+  const addToCartButton = fragment.querySelector('.add-to-cart');
+  if (addToCartButton) {
+    addToCartButton.addEventListener('click', async () => {
+      const values = [{
+        optionsUIDs: [],
+        quantity: 1,
+        sku: product.sku,
+      }];
+      const { addProductsToCart } = await import('@dropins/storefront-cart/api.js');
+      window.adobeDataLayer.push({ productContext: mapProductAcdl(product) });
+      console.debug('onAddToCart', values);
+      addProductsToCart(values);
+    });
+  }
 
   block.appendChild(fragment);
 }
 
-async function fetchProductFromApiMesh(sku) {
-  const cfg = getConfig();
-  const apiMeshEndpoint = cfg['commerce-api-mesh-endpoint'];
-  const apiMeshHeaders = cfg['headers']['api-mesh'];
-
-  const response = await fetch(apiMeshEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiMeshHeaders['x-api-key'],
-    },
-    body: JSON.stringify({
-      query: productTeaserQuery,
-      variables: { sku },
-    }),
-  });
-
-  if (!response.ok) {
-    console.error('Failed to fetch product from API Mesh');
-    return null;
-  }
-
-  const json = await response.json();
-  const item = json?.data?.listMagentoProduct?.items?.[0];
-  return item || null;
-}
-
 export default async function decorate(block) {
   const config = readBlockConfig(block);
-  config['details-button'] = config['details-button'] === true || config['details-button'] === 'true';
-  config['cart-button'] = config['cart-button'] === true || config['cart-button'] === 'true';
+  config['details-button'] = !!(config['details-button'] === true || config['details-button'] === 'true');
+  config['cart-button'] = !!(config['cart-button'] === true || config['cart-button'] === 'true');
 
   renderPlaceholder(config, block);
 
-  const product = await fetchProductFromApiMesh(config.sku);
-  if (!product) {
-    console.warn('Product not found for SKU:', config.sku);
+  const { products } = await performCatalogServiceQuery(productTeaserQuery, {
+    sku: config.sku,
+  });
+  if (!products || !products.length > 0 || !products[0].sku) {
     return;
   }
+  const [product] = products;
+  product.images = product.images.map((image) => ({ ...image, url: image.url.replace(/^https?:/, '') }));
 
   renderProduct(product, config, block);
-}
+}]
