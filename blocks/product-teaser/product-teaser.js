@@ -155,4 +155,4 @@ export default async function decorate(block) {
   product.images = product.images.map((image) => ({ ...image, url: image.url.replace(/^https?:/, '') }));
 
   renderProduct(product, config, block);
-}]
+}
