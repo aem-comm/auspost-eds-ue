@@ -1,31 +1,25 @@
-import config from '../config';
+import config from './config.json';
 
-export async function performCatalogServiceQuery(query, variables) {
-    const commerceEndpoint = config.public.default['commerce-endpoint'];
-    const headers = {
-        'Content-Type': 'application/json',
-        'x-api-key': config.public.default.headers.all['x-api-key']
-    };
+// Export API Mesh settings
+export const apiMeshEndpoint = config.apiMeshEndpoint;
+export const apiMeshApiKey = config.apiMeshApiKey;
 
-    try {
-        const response = await fetch(commerceEndpoint, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-                query,
-                variables
-            })
-        });
+// Existing utility functions (leave your existing ones intact)
+export function renderPrice(product, formatPrice) {
+  const price = product.price?.final?.amount?.value || product.priceRange?.minimum?.final?.amount?.value;
+  return price !== undefined ? formatPrice(price) : '';
+}
 
-        const json = await response.json();
+export function mapProductAcdl(product) {
+  return {
+    productName: product.name,
+    sku: product.sku,
+    price: product.price?.final?.amount?.value,
+    currency: product.price?.final?.amount?.currency,
+    category: product.category?.name || '',
+  };
+}
 
-        if (json.errors) {
-            console.error('GraphQL errors:', json.errors);
-        }
-
-        return json.data;
-    } catch (error) {
-        console.error('GraphQL request failed:', error);
-        throw error;
-    }
+export function rootLink(path) {
+  return `${window.location.origin}${path}`;
 }
