@@ -1,5 +1,5 @@
 import { readBlockConfig } from '../../scripts/aem.js';
-import { performCatalogServiceQuery, renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
+import { renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
 import { rootLink } from '../../scripts/scripts.js';
 
 const productTeaserQuery = `query productTeaser($sku: String!) {
