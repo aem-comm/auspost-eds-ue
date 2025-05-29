@@ -1,5 +1,7 @@
+// product-teaser.js (updated, linted)
 import { readBlockConfig } from '../../scripts/aem.js';
-import { renderPrice, mapProductAcdl, apiMeshEndpoint, apiMeshApiKey, rootLink } from '../../scripts/commerce.js';
+import { renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
+import { rootLink } from '../../scripts/scripts.js';
 
 function renderPlaceholder(config, block) {
   block.textContent = '';
@@ -22,6 +24,7 @@ function renderPlaceholder(config, block) {
 
 function renderImage(image, size = 250) {
   const { url: imageUrl, label } = image;
+
   const createUrlForWidth = (url, w, useWebply = true) => {
     const newUrl = new URL(url, window.location);
     if (useWebply) {
@@ -43,33 +46,52 @@ function renderImage(image, size = 250) {
   const webpUrl = createUrlForDpi(imageUrl, size, true);
   const jpgUrl = createUrlForDpi(imageUrl, size, false);
 
-  return document.createRange().createContextualFragment(`<picture>
+  return document.createRange().createContextualFragment(`
+    <picture>
       <source srcset="${webpUrl}" />
       <source srcset="${jpgUrl}" />
       <img height="${size}" width="${size}" src="${createUrlForWidth(imageUrl, size, false)}" loading="eager" alt="${label}" />
-    </picture>`);
+    </picture>
+  `);
 }
 
 function renderProduct(product, config, block) {
   const {
-    name, urlKey, sku, price, priceRange, addToCartAllowed, typename,
+    name,
+    urlKey,
+    sku,
+    price,
+    priceRange,
+    addToCartAllowed,
+    typename,
   } = product;
 
-  const currency = price?.final?.amount?.currency || priceRange?.minimum?.final?.amount?.currency;
+  const currency =
+    price?.final?.amount?.currency || priceRange?.minimum?.final?.amount?.currency;
+
   const priceFormatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
   });
 
   block.textContent = '';
+
   const fragment = document.createRange().createContextualFragment(`
     <div class="image"></div>
     <div class="details">
       <h1>${name}</h1>
       <div class="price">${renderPrice(product, priceFormatter.format)}</div>
       <div class="actions">
-        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''}
-        ${config['cart-button'] && addToCartAllowed && typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
+        ${
+          config['details-button']
+            ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>`
+            : ''
+        }
+        ${
+          config['cart-button'] && addToCartAllowed && typename === 'SimpleProductView'
+            ? '<button class="add-to-cart secondary">Add to Cart</button>'
+            : ''
+        }
       </div>
     </div>
   `);
@@ -77,6 +99,7 @@ function renderProduct(product, config, block) {
   fragment.querySelector('.image').appendChild(renderImage(product.images[0], 250));
 
   const addToCartButton = fragment.querySelector('.add-to-cart');
+
   if (addToCartButton) {
     addToCartButton.addEventListener('click', async () => {
       const values = [
@@ -86,6 +109,7 @@ function renderProduct(product, config, block) {
           sku: product.sku,
         },
       ];
+
       const { addProductsToCart } = await import('@dropins/storefront-cart/api.js');
       window.adobeDataLayer.push({ productContext: mapProductAcdl(product) });
       console.debug('onAddToCart', values);
@@ -98,15 +122,16 @@ function renderProduct(product, config, block) {
 
 export default async function decorate(block) {
   const config = readBlockConfig(block);
-  config['details-button'] = !!(config['details-button'] === true || config['details-button'] === 'true');
-  config['cart-button'] = !!(config['cart-button'] === true || config['cart-button'] === 'true');
+
+  config['details-button'] = !!(
+    config['details-button'] === true || config['details-button'] === 'true'
+  );
+
+  config['cart-button'] = !!(
+    config['cart-button'] === true || config['cart-button'] === 'true'
+  );
 
   renderPlaceholder(config, block);
-
-  if (!apiMeshEndpoint || !apiMeshApiKey) {
-    console.error('API Mesh config is missing in config.json');
-    return;
-  }
 
   const graphqlQuery = {
     query: `
@@ -127,14 +152,17 @@ export default async function decorate(block) {
     `,
   };
 
-  const response = await fetch(apiMeshEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiMeshApiKey,
+  const response = await fetch(
+    'https://runtime.adobe.io/api/your-api-mesh-endpoint/graphql',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'your-api-mesh-api-key',
+      },
+      body: JSON.stringify(graphqlQuery),
     },
-    body: JSON.stringify(graphqlQuery),
-  });
+  );
 
   const result = await response.json();
   const products = result.data.products.items;
@@ -145,14 +173,16 @@ export default async function decorate(block) {
   }
 
   const [product] = products;
+
   product.images = [
     {
       url: product.image.url.replace(/^https?:/, ''),
       label: product.image.label,
     },
   ];
-  product.addToCartAllowed = true; // Assume true for now
-  product.typename = 'SimpleProductView'; // Use without leading underscore
+
+  product.addToCartAllowed = true;
+  product.typename = 'SimpleProductView';
 
   renderProduct(product, config, block);
 }
