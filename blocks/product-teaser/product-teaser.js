@@ -2,53 +2,10 @@ import { readBlockConfig } from '../../scripts/aem.js';
 import { renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
 import { rootLink } from '../../scripts/scripts.js';
 
-const productTeaserQuery = `query productTeaser($sku: String!) {
-  products(skus: [$sku]) {
-    sku
-    urlKey
-    name
-    externalId
-    addToCartAllowed
-    __typename
-    images(roles: ["small_image"]) {
-      label
-      url
-    }
-    ... on SimpleProductView {
-      price {
-        ...priceFields
-      }
-    }
-    ... on ComplexProductView {
-      priceRange {
-        minimum {
-          ...priceFields
-        }
-        maximum {
-          ...priceFields
-        }
-      }
-    }
-  }
-}
-fragment priceFields on ProductViewPrice {
-  regular {
-    amount {
-      currency
-      value
-    }
-  }
-  final {
-    amount {
-      currency
-      value
-    }
-  }
-}`;
-
 function renderPlaceholder(config, block) {
   block.textContent = '';
-  block.appendChild(document.createRange().createContextualFragment(`
+  block.appendChild(
+    document.createRange().createContextualFragment(`
     <div class="image">
       <div class="placeholder"></div>
     </div>
@@ -60,7 +17,8 @@ function renderPlaceholder(config, block) {
         ${config['cart-button'] ? '<button class="secondary" disabled>Add to Cart</button>' : ''}
       </div>
     </div>
-  `));
+  `)
+  );
 }
 
 function renderImage(image, size = 250) {
@@ -80,7 +38,8 @@ function renderImage(image, size = 250) {
     return newUrl.toString();
   };
 
-  const createUrlForDpi = (url, w, useWebply = true) => `${createUrlForWidth(url, w, useWebply)} 1x, ${createUrlForWidth(url, w * 2, useWebply)} 2x, ${createUrlForWidth(url, w * 3, useWebply)} 3x`;
+  const createUrlForDpi = (url, w, useWebply = true) =>
+    `${createUrlForWidth(url, w, useWebply)} 1x, ${createUrlForWidth(url, w * 2, useWebply)} 2x, ${createUrlForWidth(url, w * 3, useWebply)} 3x`;
 
   const webpUrl = createUrlForDpi(imageUrl, size, true);
   const jpgUrl = createUrlForDpi(imageUrl, size, false);
@@ -161,16 +120,16 @@ export default async function decorate(block) {
           }
         }
       }
-    `
+    `,
   };
 
   const response = await fetch('https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': 'f75115a1f5c64e61a50e050543da9545'
+      'x-api-key': 'f75115a1f5c64e61a50e050543da9545',
     },
-    body: JSON.stringify(graphqlQuery)
+    body: JSON.stringify(graphqlQuery),
   });
 
   const result = await response.json();
@@ -183,9 +142,8 @@ export default async function decorate(block) {
 
   const [product] = products;
   product.images = [{ url: product.image.url.replace(/^https?:/, ''), label: product.image.label }];
-  product.addToCartAllowed = true;  // Assume true for now
-  product.__typename = 'SimpleProductView';  // Assume simple type
+  product.addToCartAllowed = true; // Assume true for now
+  product.__typename = 'SimpleProductView'; // Assume simple type
 
   renderProduct(product, config, block);
 }
-
