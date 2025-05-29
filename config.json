@@ -1,29 +1,4 @@
 {
-  "public": {
-    "default": {
-      "commerce-core-endpoint": "https://na1-sandbox.api.commerce.adobe.com/vanilla/graphql",
-      "commerce-endpoint": "https://na1-sandbox.api.commerce.adobe.com/vanilla/graphql",
-      "headers": {
-        "all": {
-          "x-api-key": "f75115a1f5c64e61a50e050543da9545"
-        }
-      },
-      "analytics": {
-        "base-currency-code": "USD",
-        "environment": "Sandbox",
-        "store-id": 1,
-        "store-name": "Vanilla Sandbox Store",
-        "store-url": "https://na1-sandbox.api.commerce.adobe.com",
-        "store-view-id": 1,
-        "store-view-name": "Default Store View",
-        "website-id": 1,
-        "website-name": "Vanilla Sandbox Website"
-      },
-      "plugins": {
-        "picker": {
-          "rootCategory": "2"
-        }
-      }
-    }
-  }
+  "apiMeshEndpoint": "https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql",
+  "apiMeshApiKey": "f75115a1f5c64e61a50e050543da9545"
 }
