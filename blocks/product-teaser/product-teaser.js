@@ -1,72 +1,158 @@
-import React, { useEffect, useState } from 'react';
-import { performCatalogServiceQuery } from '../utils/commerce';
+import { readBlockConfig } from '../../scripts/aem.js';
+import { renderPrice, mapProductAcdl, apiMeshEndpoint, apiMeshApiKey, rootLink } from '../../scripts/commerce.js';
 
-const PRODUCT_QUERY = `
-    query getProductBySku($sku: String!) {
-        products(filter: { sku: { eq: $sku } }) {
-            items {
-                id
-                name
-                sku
-                description {
-                    html
-                }
-                price_range {
-                    minimum_price {
-                        regular_price {
-                            value
-                            currency
-                        }
-                    }
-                }
-                image {
-                    url
-                    label
-                }
-            }
-        }
-    }
-`;
-
-export default function ProductTeaser({ sku }) {
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        async function fetchProduct() {
-            try {
-                const data = await performCatalogServiceQuery(PRODUCT_QUERY, { sku });
-                const productItem = data.products.items[0];
-                setProduct(productItem);
-            } catch (error) {
-                console.error('Error fetching product:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        if (sku) {
-            fetchProduct();
-        }
-    }, [sku]);
-
-    if (loading) {
-        return <div>Loading...</div>;
-    }
-
-    if (!product) {
-        return <div>Product not found.</div>;
-    }
-
-    return (
-        <div className="product-teaser">
-            <h2>{product.name}</h2>
-            <img src={product.image.url} alt={product.image.label || product.name} />
-            <div dangerouslySetInnerHTML={{ __html: product.description.html }} />
-            <p>
-                Price: {product.price_range.minimum_price.regular_price.value}{' '}
-                {product.price_range.minimum_price.regular_price.currency}
-            </p>
+function renderPlaceholder(config, block) {
+  block.textContent = '';
+  block.appendChild(
+    document.createRange().createContextualFragment(`
+      <div class="image">
+        <div class="placeholder"></div>
+      </div>
+      <div class="details">
+        <h1></h1>
+        <div class="price"></div>
+        <div class="actions">
+          ${config['details-button'] ? '<a href="#" class="button primary disabled">Details</a>' : ''}
+          ${config['cart-button'] ? '<button class="secondary" disabled>Add to Cart</button>' : ''}
         </div>
-    );
+      </div>
+    `),
+  );
+}
+
+function renderImage(image, size = 250) {
+  const { url: imageUrl, label } = image;
+  const createUrlForWidth = (url, w, useWebply = true) => {
+    const newUrl = new URL(url, window.location);
+    if (useWebply) {
+      newUrl.searchParams.set('format', 'webply');
+      newUrl.searchParams.set('optimize', 'medium');
+    } else {
+      newUrl.searchParams.delete('format');
+    }
+    newUrl.searchParams.set('width', w);
+    newUrl.searchParams.delete('quality');
+    newUrl.searchParams.delete('dpr');
+    newUrl.searchParams.delete('bg-color');
+    return newUrl.toString();
+  };
+
+  const createUrlForDpi = (url, w, useWebply = true) =>
+    `${createUrlForWidth(url, w, useWebply)} 1x, ${createUrlForWidth(url, w * 2, useWebply)} 2x, ${createUrlForWidth(url, w * 3, useWebply)} 3x`;
+
+  const webpUrl = createUrlForDpi(imageUrl, size, true);
+  const jpgUrl = createUrlForDpi(imageUrl, size, false);
+
+  return document.createRange().createContextualFragment(`<picture>
+      <source srcset="${webpUrl}" />
+      <source srcset="${jpgUrl}" />
+      <img height="${size}" width="${size}" src="${createUrlForWidth(imageUrl, size, false)}" loading="eager" alt="${label}" />
+    </picture>`);
+}
+
+function renderProduct(product, config, block) {
+  const {
+    name, urlKey, sku, price, priceRange, addToCartAllowed, typename,
+  } = product;
+
+  const currency = price?.final?.amount?.currency || priceRange?.minimum?.final?.amount?.currency;
+  const priceFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  });
+
+  block.textContent = '';
+  const fragment = document.createRange().createContextualFragment(`
+    <div class="image"></div>
+    <div class="details">
+      <h1>${name}</h1>
+      <div class="price">${renderPrice(product, priceFormatter.format)}</div>
+      <div class="actions">
+        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''}
+        ${config['cart-button'] && addToCartAllowed && typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
+      </div>
+    </div>
+  `);
+
+  fragment.querySelector('.image').appendChild(renderImage(product.images[0], 250));
+
+  const addToCartButton = fragment.querySelector('.add-to-cart');
+  if (addToCartButton) {
+    addToCartButton.addEventListener('click', async () => {
+      const values = [
+        {
+          optionsUIDs: [],
+          quantity: 1,
+          sku: product.sku,
+        },
+      ];
+      const { addProductsToCart } = await import('@dropins/storefront-cart/api.js');
+      window.adobeDataLayer.push({ productContext: mapProductAcdl(product) });
+      console.debug('onAddToCart', values);
+      addProductsToCart(values);
+    });
+  }
+
+  block.appendChild(fragment);
+}
+
+export default async function decorate(block) {
+  const config = readBlockConfig(block);
+  config['details-button'] = !!(config['details-button'] === true || config['details-button'] === 'true');
+  config['cart-button'] = !!(config['cart-button'] === true || config['cart-button'] === 'true');
+
+  renderPlaceholder(config, block);
+
+  if (!apiMeshEndpoint || !apiMeshApiKey) {
+    console.error('API Mesh config is missing in config.json');
+    return;
+  }
+
+  const graphqlQuery = {
+    query: `
+      query {
+        products(filter: { sku: { eq: "${config.sku}" } }) {
+          items {
+            name
+            sku
+            url_key
+            type_id
+            image {
+              url
+              label
+            }
+          }
+        }
+      }
+    `,
+  };
+
+  const response = await fetch(apiMeshEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiMeshApiKey,
+    },
+    body: JSON.stringify(graphqlQuery),
+  });
+
+  const result = await response.json();
+  const products = result.data.products.items;
+
+  if (!products || products.length === 0) {
+    console.warn('No products found for SKU:', config.sku);
+    return;
+  }
+
+  const [product] = products;
+  product.images = [
+    {
+      url: product.image.url.replace(/^https?:/, ''),
+      label: product.image.label,
+    },
+  ];
+  product.addToCartAllowed = true; // Assume true for now
+  product.typename = 'SimpleProductView'; // Use without leading underscore
+
+  renderProduct(product, config, block);
 }
