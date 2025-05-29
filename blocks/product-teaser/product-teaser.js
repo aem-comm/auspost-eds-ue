@@ -145,14 +145,47 @@ export default async function decorate(block) {
 
   renderPlaceholder(config, block);
 
-  const { products } = await performCatalogServiceQuery(productTeaserQuery, {
-    sku: config.sku,
+  const graphqlQuery = {
+    query: `
+      query {
+        products(filter: { sku: { eq: "${config.sku}" } }) {
+          items {
+            name
+            sku
+            url_key
+            type_id
+            image {
+              url
+              label
+            }
+          }
+        }
+      }
+    `
+  };
+
+  const response = await fetch('https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': 'f75115a1f5c64e61a50e050543da9545'
+    },
+    body: JSON.stringify(graphqlQuery)
   });
-  if (!products || !products.length > 0 || !products[0].sku) {
+
+  const result = await response.json();
+  const products = result.data.products.items;
+
+  if (!products || products.length === 0) {
+    console.warn('No products found for SKU:', config.sku);
     return;
   }
+
   const [product] = products;
-  product.images = product.images.map((image) => ({ ...image, url: image.url.replace(/^https?:/, '') }));
+  product.images = [{ url: product.image.url.replace(/^https?:/, ''), label: product.image.label }];
+  product.addToCartAllowed = true;  // Assume true for now
+  product.__typename = 'SimpleProductView';  // Assume simple type
 
   renderProduct(product, config, block);
 }
+
