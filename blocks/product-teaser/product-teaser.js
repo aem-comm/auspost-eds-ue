@@ -13,11 +13,11 @@ function renderPlaceholder(config, block) {
       <h1></h1>
       <div class="price"></div>
       <div class="actions">
-        ${config['details-button'] ? '<a href="#" class="button primary disabled">Details</a>' : ''}
+        ${config['details-button'] ? '<a href="#" class="button primary disabled">Details</a>' : ''},
         ${config['cart-button'] ? '<button class="secondary" disabled>Add to Cart</button>' : ''}
       </div>
     </div>
-  `)
+  `),
   );
 }
 
@@ -38,8 +38,7 @@ function renderImage(image, size = 250) {
     return newUrl.toString();
   };
 
-  const createUrlForDpi = (url, w, useWebply = true) =>
-    `${createUrlForWidth(url, w, useWebply)} 1x, ${createUrlForWidth(url, w * 2, useWebply)} 2x, ${createUrlForWidth(url, w * 3, useWebply)} 3x`;
+  const createUrlForDpi = (url, w, useWebply = true) => `${createUrlForWidth(url, w, useWebply)} 1x, ${createUrlForWidth(url, w * 2, useWebply)} 2x, ${createUrlForWidth(url, w * 3, useWebply)} 3x`;
 
   const webpUrl = createUrlForDpi(imageUrl, size, true);
   const jpgUrl = createUrlForDpi(imageUrl, size, false);
@@ -54,7 +53,7 @@ function renderImage(image, size = 250) {
 
 function renderProduct(product, config, block) {
   const {
-    name, urlKey, sku, price, priceRange, addToCartAllowed, __typename,
+    name, urlKey, sku, price, priceRange, addToCartAllowed, typename,
   } = product;
 
   const currency = price?.final?.amount?.currency || priceRange?.minimum?.final?.amount?.currency;
@@ -71,8 +70,8 @@ function renderProduct(product, config, block) {
       <h1>${name}</h1>
       <div class="price">${renderPrice(product, priceFormatter.format)}</div>
       <div class="actions">
-        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''}
-        ${config['cart-button'] && addToCartAllowed && __typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
+        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''},
+        ${config['cart-button'] && addToCartAllowed && typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
       </div>
     </div>
   `);
@@ -82,11 +81,13 @@ function renderProduct(product, config, block) {
   const addToCartButton = fragment.querySelector('.add-to-cart');
   if (addToCartButton) {
     addToCartButton.addEventListener('click', async () => {
-      const values = [{
-        optionsUIDs: [],
-        quantity: 1,
-        sku: product.sku,
-      }];
+      const values = [
+        {
+          optionsUIDs: [],
+          quantity: 1,
+          sku: product.sku,
+        },
+      ];
       const { addProductsToCart } = await import('@dropins/storefront-cart/api.js');
       window.adobeDataLayer.push({ productContext: mapProductAcdl(product) });
       console.debug('onAddToCart', values);
@@ -141,9 +142,14 @@ export default async function decorate(block) {
   }
 
   const [product] = products;
-  product.images = [{ url: product.image.url.replace(/^https?:/, ''), label: product.image.label }];
+  product.images = [
+    {
+      url: product.image.url.replace(/^https?:/, ''),
+      label: product.image.label,
+    },
+  ];
   product.addToCartAllowed = true; // Assume true for now
-  product.__typename = 'SimpleProductView'; // Assume simple type
+  product.typename = 'SimpleProductView'; // Use without leading underscore
 
   renderProduct(product, config, block);
 }
