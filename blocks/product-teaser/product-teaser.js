@@ -1,11 +1,54 @@
 import { readBlockConfig } from '../../scripts/aem.js';
-import { renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
+import { performCatalogServiceQuery, renderPrice, mapProductAcdl } from '../../scripts/commerce.js';
 import { rootLink } from '../../scripts/scripts.js';
+
+const productTeaserQuery = `query productTeaser($sku: String!) {
+  products(skus: [$sku]) {
+    sku
+    urlKey
+    name
+    externalId
+    addToCartAllowed
+    __typename
+    images(roles: ["small_image"]) {
+      label
+      url
+    }
+    ... on SimpleProductView {
+      price {
+        ...priceFields
+      }
+    }
+    ... on ComplexProductView {
+      priceRange {
+        minimum {
+          ...priceFields
+        }
+        maximum {
+          ...priceFields
+        }
+      }
+    }
+  }
+}
+fragment priceFields on ProductViewPrice {
+  regular {
+    amount {
+      currency
+      value
+    }
+  }
+  final {
+    amount {
+      currency
+      value
+    }
+  }
+}`;
 
 function renderPlaceholder(config, block) {
   block.textContent = '';
-  block.appendChild(
-    document.createRange().createContextualFragment(`
+  block.appendChild(document.createRange().createContextualFragment(`
     <div class="image">
       <div class="placeholder"></div>
     </div>
@@ -13,12 +56,11 @@ function renderPlaceholder(config, block) {
       <h1></h1>
       <div class="price"></div>
       <div class="actions">
-        ${config['details-button'] ? '<a href="#" class="button primary disabled">Details</a>' : ''},
+        ${config['details-button'] ? '<a href="#" class="button primary disabled">Details</a>' : ''}
         ${config['cart-button'] ? '<button class="secondary" disabled>Add to Cart</button>' : ''}
       </div>
     </div>
-  `),
-  );
+  `));
 }
 
 function renderImage(image, size = 250) {
@@ -53,7 +95,7 @@ function renderImage(image, size = 250) {
 
 function renderProduct(product, config, block) {
   const {
-    name, urlKey, sku, price, priceRange, addToCartAllowed, typename,
+    name, urlKey, sku, price, priceRange, addToCartAllowed, __typename,
   } = product;
 
   const currency = price?.final?.amount?.currency || priceRange?.minimum?.final?.amount?.currency;
@@ -70,8 +112,8 @@ function renderProduct(product, config, block) {
       <h1>${name}</h1>
       <div class="price">${renderPrice(product, priceFormatter.format)}</div>
       <div class="actions">
-        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''},
-        ${config['cart-button'] && addToCartAllowed && typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
+        ${config['details-button'] ? `<a href="${rootLink(`/products/${urlKey}/${sku}`)}" class="button primary">Details</a>` : ''}
+        ${config['cart-button'] && addToCartAllowed && __typename === 'SimpleProductView' ? '<button class="add-to-cart secondary">Add to Cart</button>' : ''}
       </div>
     </div>
   `);
@@ -81,13 +123,11 @@ function renderProduct(product, config, block) {
   const addToCartButton = fragment.querySelector('.add-to-cart');
   if (addToCartButton) {
     addToCartButton.addEventListener('click', async () => {
-      const values = [
-        {
-          optionsUIDs: [],
-          quantity: 1,
-          sku: product.sku,
-        },
-      ];
+      const values = [{
+        optionsUIDs: [],
+        quantity: 1,
+        sku: product.sku,
+      }];
       const { addProductsToCart } = await import('@dropins/storefront-cart/api.js');
       window.adobeDataLayer.push({ productContext: mapProductAcdl(product) });
       console.debug('onAddToCart', values);
@@ -105,51 +145,14 @@ export default async function decorate(block) {
 
   renderPlaceholder(config, block);
 
-  const graphqlQuery = {
-    query: `
-      query {
-        products(filter: { sku: { eq: "${config.sku}" } }) {
-          items {
-            name
-            sku
-            url_key
-            type_id
-            image {
-              url
-              label
-            }
-          }
-        }
-      }
-    `,
-  };
-
-  const response = await fetch('https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': 'f75115a1f5c64e61a50e050543da9545',
-    },
-    body: JSON.stringify(graphqlQuery),
+  const { products } = await performCatalogServiceQuery(productTeaserQuery, {
+    sku: config.sku,
   });
-
-  const result = await response.json();
-  const products = result.data.products.items;
-
-  if (!products || products.length === 0) {
-    console.warn('No products found for SKU:', config.sku);
+  if (!products || !products.length > 0 || !products[0].sku) {
     return;
   }
-
   const [product] = products;
-  product.images = [
-    {
-      url: product.image.url.replace(/^https?:/, ''),
-      label: product.image.label,
-    },
-  ];
-  product.addToCartAllowed = true; // Assume true for now
-  product.typename = 'SimpleProductView'; // Use without leading underscore
+  product.images = product.images.map((image) => ({ ...image, url: image.url.replace(/^https?:/, '') }));
 
   renderProduct(product, config, block);
 }
