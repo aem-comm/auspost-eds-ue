@@ -5,8 +5,8 @@ export const setGuestEmail = (customerEmail) => {
 };
 
 export const setGuestShippingAddress = (customerAddress, isSelectableState) => {
-  cy.get(fields.shippingFormFirstName).clear().type(customerAddress.firstName);
-  cy.get(fields.shippingFormLastName).clear().type(customerAddress.lastName);
+ // cy.get(fields.shippingFormFirstName).clear().type(customerAddress.firstName);
+  cy.get(fields.shippingFormFullName).clear().type(customerAddress.fullName);
   cy.get(fields.shippingFormStreet).clear().type(customerAddress.street);
   cy.get(fields.shippingFormStreet1).clear().type(customerAddress.street1);
   if (isSelectableState) {
@@ -21,10 +21,10 @@ export const setGuestShippingAddress = (customerAddress, isSelectableState) => {
 
 export const setGuestBillingAddress = (customerAddress, isSelectableState) => {
   cy.wait(1000);
-  cy.get(fields.billingFormFirstName)
+  cy.get(fields.billingFormFullName)
     .should("not.be.disabled")
     .clear()
-    .type(customerAddress.firstName, { force: true });
+    .type(customerAddress.fullName, { force: true });
   cy.wait(1000);
   cy.get(fields.billingFormLastName)
     .should("not.be.disabled")
@@ -91,8 +91,8 @@ export const signUpUser = (sign_up, isValid = true) => {
       .clear({ force: true })
       .type(username);
   }
-  cy.get(fields.authFormUserFirstName).clear().type(sign_up.firstName);
-  cy.get(fields.authFormUserLastName).clear().type(sign_up.lastName);
+  //cy.get(fields.authFormUserFirstName).clear().type(sign_up.firstName);
+  cy.get(fields.authFormUserFullName).clear().type(sign_up.fullName);
   cy.get(fields.authFormUserPassword).eq(1).clear().type(sign_up.password);
 
   if (isValid) {
