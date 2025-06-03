@@ -2,10 +2,8 @@ export const checkoutButton = '[data-testid="checkout-button"]';
 
 // Shipping Form
 export const shippingFormGuestEmail = 'input[name="customer-email"]';
-export const shippingFormFirstName =
-  'form[name="selectedShippingAddress"] input[name="firstName"]';
-export const shippingFormLastName =
-  'form[name="selectedShippingAddress"] input[name="lastName"]';
+export const shippingFormFullName =
+  'form[name="selectedShippingAddress"] input[name="fullName"]';
 export const shippingFormCompany =
   'form[name="selectedShippingAddress"] input[name="company"]';
 export const shippingFormStreet =
@@ -33,10 +31,8 @@ export const shippingFormInputState =
 
 // Billing Form
 export const billingFormGuestEmail = 'input[name="customer-email"]';
-export const billingFormFirstName =
-  'form[name="selectedBillingAddress"] input[name="firstName"]';
-export const billingFormLastName =
-  'form[name="selectedBillingAddress"] input[name="lastName"]';
+export const billingFormFullName =
+  'form[name="selectedBillingAddress"] input[name="fullName"]';
 export const billingFormCompany =
   'form[name="selectedBillingAddress"] input[name="company"]';
 export const billingFormStreet =
@@ -111,10 +107,10 @@ export const estimatedShippingCountrySelector =
 
 export const estimatedTaxTotal = '[data-testid="tax-total"]';
 
+// Auth Forms
 export const authFormUserCompany = 'input[name="companyName"]';
 export const authFormUserEmail = 'input[name="email"]';
-export const authFormUserFirstName = 'input[name="firstName"]';
-export const authFormUserLastName = 'input[name="lastName"]';
+export const authFormUserFullName = 'input[name="fullName"]';
 export const authFormUserPassword = 'input[name="password"]';
 
 export const cancellationReasonsSelector =
