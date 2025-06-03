@@ -332,6 +332,10 @@
     grid-column: 1 / span 7;
     row-gap: var(--spacing-xbig);
   }
+    
+  .checkout__main .account-address-form div.drop-field {
+    grid-column: span 1;
+  }
 
   .checkout__aside {
     grid-column: 9 / span 4;
