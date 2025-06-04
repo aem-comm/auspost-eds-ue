@@ -15,6 +15,7 @@
     "id": "section",
     "components": [
       "text",
+      "senddatatocomm",
       "image",
       "button",
       "title",
