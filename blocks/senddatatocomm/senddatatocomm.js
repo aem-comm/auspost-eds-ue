@@ -15,8 +15,7 @@ export default function decorate(block) {
 
   // Button click handler
   button.addEventListener('click', async () => {
-    const endpoint =
-      'https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql';
+    const endpoint = 'https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql';
     const token = 'f75115a1f5c64e61a50e050543da9545';
 
     const firstname = block.dataset.firstname || 'John';
