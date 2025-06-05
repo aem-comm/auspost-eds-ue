@@ -57,6 +57,35 @@
     ]
   },
   {
+    "id": "senddatatocomm",
+    "fields": [
+      {
+        "component": "text",
+        "name": "firstname",
+        "label": "First Name",
+        "description": "Customer First Name"
+      },
+      {
+        "component": "text",
+        "name": "lastname",
+        "label": "Last Name",
+        "description": "Customer Last Name"
+      },
+      {
+        "component": "text",
+        "name": "email",
+        "label": "Email Address",
+        "description": "Customer Email"
+      },
+      {
+        "component": "password",
+        "name": "password",
+        "label": "Password",
+        "description": "Customer Password"
+      }
+    ]
+  },
+  {
     "id": "button",
     "fields": [
       {
