@@ -40,7 +40,7 @@ export default function decorate(block) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + token,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ query }),
       });
@@ -48,15 +48,12 @@ export default function decorate(block) {
       const data = await response.json();
 
       if (data.errors) {
-        console.error('GraphQL Errors:', data.errors);
-        resultDisplay.textContent = '❌ Error: ' + JSON.stringify(data.errors, null, 2);
+        resultDisplay.textContent = `❌ Error:\n${JSON.stringify(data.errors, null, 2)}`;
       } else {
-        console.log('Mutation response:', data);
-        resultDisplay.textContent = '✅ Customer Created:\n' + JSON.stringify(data.data, null, 2);
+        resultDisplay.textContent = `✅ Customer Created:\n${JSON.stringify(data.data, null, 2)}`;
       }
     } catch (error) {
-      console.error('Fetch error:', error);
-      resultDisplay.textContent = '⚠️ Network Error: ' + error.message;
+      resultDisplay.textContent = `⚠️ Network Error: ${error.message}`;
     }
   });
 }
