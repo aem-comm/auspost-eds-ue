@@ -15,6 +15,7 @@
     "id": "section",
     "components": [
       "text",
+			"image",
       "senddatatocomm",
       "button",
       "title",
@@ -24,6 +25,7 @@
       "fragment",
       "product-recommendations",
       "product-details",
+			"product-teaser",
 			"product-list-page",
 			"commerce-checkout",
 			"commerce-customer-details",
