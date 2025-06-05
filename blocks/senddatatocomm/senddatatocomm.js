@@ -1,27 +1,35 @@
 export default function decorate(block) {
   const button = document.createElement('button');
-  button.textContent = 'Fetch Product from API Mesh';
+  button.textContent = 'Create Customer via API Mesh';
+  button.style.padding = '1em';
+  button.style.marginBottom = '1em';
   block.appendChild(button);
 
   const resultDisplay = document.createElement('pre');
+  resultDisplay.style.backgroundColor = '#f5f5f5';
+  resultDisplay.style.padding = '1em';
+  resultDisplay.style.whiteSpace = 'pre-wrap';
   block.appendChild(resultDisplay);
 
   button.addEventListener('click', async () => {
     const endpoint = 'https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql';
-    const apiKey = 'f75115a1f5c64e61a50e050543da9545';
+    const token = 'f75115a1f5c64e61a50e050543da9545';
 
     const query = `
-      query {
-        products(filter: { sku: { eq: "SUN90" } }) {
-          items {
-            name
-            sku
-            url_key
-            type_id
-            image {
-              url
-              label
-            }
+      mutation {
+        createCustomerV2(
+          input: {
+            firstname: "John"
+            lastname: "Doe"
+            email: "john.doe@example.com"
+            password: "MySecurePassword123"
+          }
+        ) {
+          customer {
+            firstname
+            lastname
+            email
+            is_subscribed
           }
         }
       }
@@ -32,7 +40,7 @@ export default function decorate(block) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          Authorization: 'Bearer ' + token,
         },
         body: JSON.stringify({ query }),
       });
@@ -41,14 +49,14 @@ export default function decorate(block) {
 
       if (data.errors) {
         console.error('GraphQL Errors:', data.errors);
-        resultDisplay.textContent = '❌ Failed to fetch product data.';
+        resultDisplay.textContent = '❌ Error: ' + JSON.stringify(data.errors, null, 2);
       } else {
-        console.log('Product data:', data);
-        resultDisplay.textContent = JSON.stringify(data, null, 2);
+        console.log('Mutation response:', data);
+        resultDisplay.textContent = '✅ Customer Created:\n' + JSON.stringify(data.data, null, 2);
       }
-    } catch (err) {
-      console.error(err);
-      resultDisplay.textContent = '⚠️ Error occurred during fetch.';
+    } catch (error) {
+      console.error('Fetch error:', error);
+      resultDisplay.textContent = '⚠️ Network Error: ' + error.message;
     }
   });
 }
