@@ -16,7 +16,6 @@
     "components": [
       "text",
 			"image",
-      "senddatatocomm",
       "button",
       "title",
       "hero",
