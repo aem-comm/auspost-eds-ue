@@ -19,7 +19,6 @@ export default function decorate(block) {
       'https://edge-sandbox-graph.adobe.io/api/0804747e-2944-4ef2-b5f7-e1b7a1d6bc32/graphql';
     const token = 'f75115a1f5c64e61a50e050543da9545';
 
-    // Read dynamic values from block dataset (set via Universal Editor or JSON)
     const firstname = block.dataset.firstname || 'John';
     const lastname = block.dataset.lastname || 'Doe';
     const email = block.dataset.email || 'john.doe@example.com';
