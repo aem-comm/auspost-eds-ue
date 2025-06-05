@@ -57,35 +57,6 @@
     ]
   },
   {
-    "id": "senddatatocomm",
-    "fields": [
-      {
-        "component": "text",
-        "name": "firstname",
-        "label": "First Name",
-        "description": "Customer First Name"
-      },
-      {
-        "component": "text",
-        "name": "lastname",
-        "label": "Last Name",
-        "description": "Customer Last Name"
-      },
-      {
-        "component": "text",
-        "name": "email",
-        "label": "Email Address",
-        "description": "Customer Email"
-      },
-      {
-        "component": "password",
-        "name": "password",
-        "label": "Password",
-        "description": "Customer Password"
-      }
-    ]
-  },
-  {
     "id": "button",
     "fields": [
       {
@@ -333,35 +304,6 @@
         "name": "minified-view",
         "label": "Minified View",
         "value": false
-      }
-    ]
-  },
-  {
-    "id": "content-fragment-offer",
-    "fields": [
-      {
-        "component": "aem-content-fragment",
-        "name": "path",
-        "value": "",
-        "label": "Content Fragment path",
-        "valueType": "string"
-      },
-      {
-        "component": "select",
-        "name": "variation",
-        "value": "",
-        "label": "Variation",
-        "valueType": "string",
-        "options": [
-          {
-            "name": "Default",
-            "value": "master"
-          },
-          {
-            "name": "Variation 1",
-            "value": "Variation 1"
-          }
-        ]
       }
     ]
   },
