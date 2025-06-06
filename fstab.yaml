@@ -3,6 +3,7 @@ mountpoints:
     url: "https://author-p156056-e1664671.adobeaemcloud.com/bin/franklin.delivery/aem-comm/auspost-eds-ue/main"
     type: "markup"
     suffix: ".html"
+
 folders:
+  /: /
   /products/: /products/
-  
